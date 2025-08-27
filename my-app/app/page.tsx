@@ -80,7 +80,7 @@ export default function Home() {
         // Create a new React Flow node
         const newNode: Node = {
           id: newNodeId,
-          type: 'custom',
+          type: 'bezier',
           position: dropPosition,
           data: {
             label: toolData.name,
@@ -108,7 +108,7 @@ export default function Home() {
 
         const newNode: Node = {
           id: newNodeId,
-          type: 'custom',
+          type: 'bezier',
           position: position,
           data: {
             label: toolData.name,

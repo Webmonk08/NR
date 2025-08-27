@@ -15,7 +15,7 @@ import {
     const sections = [
       {
         tools: [
-          { id: "file", name: "File", icon: <FileText size={24} />, color: "hover:bg-orange-100" },
+          { id: "file", name: "File", icon: <FileText size={24} />, color: "hover:bg-orange-100"},
           { id: "csv", name: "CSV File Import", icon: <Table size={24} />, color: "hover:bg-orange-100" },
           { id: "datasets", name: "Datasets", icon: <Download size={24} />, color: "hover:bg-orange-100" },
           { id: "sql", name: "SQL Table", icon: <Database size={24} />, color: "hover:bg-orange-100" },

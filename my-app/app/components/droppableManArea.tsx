@@ -82,10 +82,10 @@ export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdges
                     nodeTypes={nodeTypes}
                     fitView
                     className="bg-transparent"
-                    connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 2 }}
+                    connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 3 }}
                     defaultEdgeOptions={{
                         style: { stroke: '#3b82f6', strokeWidth: 2 },
-                        type: 'smoothstep',
+                        type: 'beizer',
                     }}
                 >
                     <Controls
