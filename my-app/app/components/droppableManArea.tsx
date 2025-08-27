@@ -4,12 +4,11 @@ import ReactFlow, {
     BackgroundVariant,
     Node, Edge,
     NodeTypes,
-    useReactFlow,
     ReactFlowInstance,
-
+    
 } from 'reactflow'
 import { useDroppable } from '@dnd-kit/core';
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import CustomNode from '@/app/components/customNode'
 
 
@@ -20,17 +19,20 @@ interface DroppableMainAreaProps {
     onEdgesChange: any;
     onConnect: any;
     onDrop?: (position: { x: number, y: number }) => void;
+    onNodesDelete : any
 }
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
 };
 
-export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop }: DroppableMainAreaProps) {
+export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop,onNodesDelete }: DroppableMainAreaProps) {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
+
+    
     // Track mouse position over the ReactFlow area
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (reactFlowWrapper.current) {
@@ -69,11 +71,13 @@ export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdges
         >
             <div ref={reactFlowWrapper} className="w-full h-full">
                 <ReactFlow
+                    
                     nodes={nodes}
                     edges={edges}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
+                    onNodesDelete={onNodesDelete}
                     onInit={setReactFlowInstance}
                     nodeTypes={nodeTypes}
                     fitView

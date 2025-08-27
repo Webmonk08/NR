@@ -7,6 +7,9 @@ import {
   Connection,
   useNodesState,
   useEdgesState,
+  getIncomers,
+  getOutgoers,
+  getConnectedEdges
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Sidenav from '@/app/components/sidenav'
@@ -15,7 +18,7 @@ import DroppableMainArea from "./components/droppableManArea";
 
 export default function Home() {
 
-  
+
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -25,6 +28,34 @@ export default function Home() {
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
+  );
+  const onNodesDelete = useCallback(
+    (deleted: Node[]) => {
+      let remainingNodes: Node[] = [...nodes];
+      setEdges(
+        deleted.reduce((acc, node) => {
+          const incomers = getIncomers(node, remainingNodes, acc);
+          const outgoers = getOutgoers(node, remainingNodes, acc);
+          const connectedEdges = getConnectedEdges([node], acc);
+
+          const remainingEdges = acc.filter((edge) => !connectedEdges.includes(edge));
+
+          const createdEdges = incomers.flatMap(({ id: source }) =>
+            outgoers.map(({ id: target }) => ({
+              id: `${source}->${target}`,
+              source,
+              target,
+            })),
+          );
+
+          remainingNodes = remainingNodes.filter((rn) => rn.id !== node.id);
+
+          return [...remainingEdges, ...createdEdges];
+        }, edges),
+      );
+      setNodes(remainingNodes)
+    },
+    [nodes, edges],
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -105,6 +136,7 @@ export default function Home() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onDrop={handleDrop}
+          onNodesDelete={onNodesDelete}
         />
       </div>
 
