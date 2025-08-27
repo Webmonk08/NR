@@ -40,14 +40,17 @@ export default function Home() {
         const newNodeId = `${toolData.id}-${nodeCounter}`;
         setNodeCounter(prev => prev + 1);
 
+        // Get the actual drop position from the droppable area
+        const dropPosition = over.data.current?.getDropPosition?.() || {
+          x: Math.max(50, Math.random() * 400),
+          y: Math.max(50, Math.random() * 300)
+        };
+
         // Create a new React Flow node
         const newNode: Node = {
           id: newNodeId,
           type: 'custom',
-          position: {
-            x: Math.max(50, Math.random() * 400),
-            y: Math.max(50, Math.random() * 300)
-          },
+          position: dropPosition,
           data: {
             label: toolData.name,
             icon: toolData.icon,
@@ -64,6 +67,31 @@ export default function Home() {
     setActiveId(null);
   };
 
+  // Handle drop from the DroppableMainArea component
+  const handleDrop = useCallback((position: { x: number, y: number }) => {
+    if (activeId) {
+      const toolData = getAllTools().find(tool => tool.id === activeId);
+      if (toolData) {
+        const newNodeId = `${toolData.id}-${nodeCounter}`;
+        setNodeCounter(prev => prev + 1);
+
+        const newNode: Node = {
+          id: newNodeId,
+          type: 'custom',
+          position: position,
+          data: {
+            label: toolData.name,
+            icon: toolData.icon,
+            toolId: toolData.id
+          },
+          draggable: true,
+        };
+
+        setNodes(prev => [...prev, newNode]);
+      }
+    }
+  }, [activeId, nodeCounter, setNodes]);
+
   const activeTool = activeId ? getAllTools().find(tool => tool.id === activeId) : null;
 
   return (
@@ -76,6 +104,7 @@ export default function Home() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onDrop={handleDrop}
         />
       </div>
 
