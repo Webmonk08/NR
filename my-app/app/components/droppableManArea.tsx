@@ -5,7 +5,7 @@ import ReactFlow, {
     Node, Edge,
     NodeTypes,
     ReactFlowInstance,
-    
+
 } from 'reactflow'
 import { useDroppable } from '@dnd-kit/core';
 import { useState, useRef, useCallback } from 'react';
@@ -19,20 +19,20 @@ interface DroppableMainAreaProps {
     onEdgesChange: any;
     onConnect: any;
     onDrop?: (position: { x: number, y: number }) => void;
-    onNodesDelete : any
+    onNodesDelete: any
 }
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
 };
 
-export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop,onNodesDelete }: DroppableMainAreaProps) {
+export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop, onNodesDelete }: DroppableMainAreaProps) {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
 
-    
+
     // Track mouse position over the ReactFlow area
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (reactFlowWrapper.current) {
@@ -71,7 +71,6 @@ export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdges
         >
             <div ref={reactFlowWrapper} className="w-full h-full">
                 <ReactFlow
-                    
                     nodes={nodes}
                     edges={edges}
                     onNodesChange={onNodesChange}
@@ -84,7 +83,7 @@ export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdges
                     className="bg-transparent"
                     connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 3 }}
                     defaultEdgeOptions={{
-                        style: { stroke: '#3b82f6', strokeWidth: 2 },
+                        style: { stroke: '#3b82f6', strokeWidth: 2 ,borderRadius : '50%'},
                         type: 'beizer',
                     }}
                 >
