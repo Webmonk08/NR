@@ -7,25 +7,9 @@ import {
   BarChart, LineChart, Box
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
+import { ToolItem } from '../types/toolItem';
+import { Section } from '../types/section';
 
-
-interface ToolItem {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  color: string;
-}
-
-interface Section {
-  id: string;
-  title: string;
-  color: string;
-  bgColor: string;
-  isExpanded: boolean;
-  tools: ToolItem[];
-}
-
-// Custom Node Component
 
 interface DraggableToolProps {
   tool: ToolItem;

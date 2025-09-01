@@ -2,25 +2,13 @@ import ReactFlow, {
     Controls,
     Background,
     BackgroundVariant,
-    Node, Edge,
     NodeTypes,
     ReactFlowInstance,
-
 } from 'reactflow'
 import { useDroppable } from '@dnd-kit/core';
 import { useState, useRef, useCallback } from 'react';
 import CustomNode from '@/app/components/customNode'
-
-
-interface DroppableMainAreaProps {
-    nodes: Node[];
-    edges: Edge[];
-    onNodesChange: any;
-    onEdgesChange: any;
-    onConnect: any;
-    onDrop?: (position: { x: number, y: number }) => void;
-    onNodesDelete: any
-}
+import { DroppableMainAreaProps } from '../types/mainArea';
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
@@ -31,9 +19,6 @@ export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdges
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
-
-
-    // Track mouse position over the ReactFlow area
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (reactFlowWrapper.current) {
             const bounds = reactFlowWrapper.current.getBoundingClientRect();
@@ -47,10 +32,8 @@ export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdges
     const { isOver, setNodeRef } = useDroppable({
         id: 'main-area',
         data: {
-            // Pass the current mouse position and ReactFlow instance to the drop handler
             getDropPosition: () => {
                 if (reactFlowInstance && reactFlowWrapper.current) {
-                    // Convert screen coordinates to ReactFlow coordinates
                     const position = reactFlowInstance.project({
                         x: mousePosition.x,
                         y: mousePosition.y,
@@ -69,7 +52,7 @@ export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdges
           bg-gradient-to-br from-slate-50 to-slate-100 ${isOver ? 'bg-blue-50' : ''}`}
             onMouseMove={handleMouseMove}
         >
-            <div ref={reactFlowWrapper} className="w-full h-full">
+            <div ref={reactFlowWrapper} className="w-full h-200">
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}

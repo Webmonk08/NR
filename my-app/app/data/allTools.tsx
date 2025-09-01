@@ -3,14 +3,8 @@ import {
     Dice1, MousePointer, Rows, RotateCcw, Filter, Grid3X3, Grid, Users, TreePine, Bot,
     BarChart, LineChart, Box,
   } from "lucide-react";
-  
-  export interface ToolItem {
-    id: string;
-    name: string;
-    icon: React.ReactNode;
-    color: string;
-  }
-  
+import { ToolItem } from "../types/toolItem";
+
   export const getAllTools = (): ToolItem[]=> {
     const sections = [
       {
