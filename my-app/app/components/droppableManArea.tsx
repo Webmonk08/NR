@@ -4,17 +4,32 @@ import ReactFlow, {
     BackgroundVariant,
     NodeTypes,
     ReactFlowInstance,
+    OnNodesChange,
+    OnEdgesChange,
+    OnConnect
 } from 'reactflow'
 import { useDroppable } from '@dnd-kit/core';
 import { useState, useRef, useCallback } from 'react';
-import CustomNode from '@/app/components/customNode'
-import { DroppableMainAreaProps } from '../types/mainArea';
+import CustomNode from './customNode'
+import {DroppableMainAreaProps} from '@/app/types/mainArea';
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
 };
 
-export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop, onNodesDelete }: DroppableMainAreaProps) {
+
+export default function DroppableMainArea({ 
+  nodes, 
+  edges, 
+  onNodesChange, 
+  onEdgesChange, 
+  onConnect, 
+  onNodesDelete,
+  onNodeClick,
+  onPaneClick,
+  nodeTypes,
+  onDrop 
+}: DroppableMainAreaProps) {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -61,13 +76,15 @@ export default function DroppableMainArea({ nodes, edges, onNodesChange, onEdges
                     onConnect={onConnect}
                     onNodesDelete={onNodesDelete}
                     onInit={setReactFlowInstance}
+                    onNodeClick={onNodeClick}
+                    onPaneClick={onPaneClick}
                     nodeTypes={nodeTypes}
                     fitView
                     className="bg-transparent"
                     connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 3 }}
                     defaultEdgeOptions={{
                         style: { stroke: '#3b82f6', strokeWidth: 2 ,borderRadius : '50%'},
-                        type: 'beizer',
+                        type: 'default',
                     }}
                 >
                     <Controls

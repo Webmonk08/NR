@@ -27,14 +27,12 @@ const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
     const handleDownload = () => {
         if (plotRef.current) {
-            // Implementation for downloading the plot as PNG/PDF
             console.log('Downloading plot...');
         }
     };
 
     const handleRefresh = () => {
         setIsLoading(true);
-        // Simulate data refresh
         setTimeout(() => setIsLoading(false), 1000);
     };
 
@@ -97,7 +95,6 @@ const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
                 </div>
             </div>
 
-            {/* Visualization Content */}
             <div className="flex-1 overflow-hidden" ref={plotRef}>
                 {renderVisualization()}
             </div>

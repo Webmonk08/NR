@@ -20,18 +20,17 @@ import {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-// Components
 import Sidenav from '@/app/components/sidenav';
 import DroppableMainArea from "./components/droppableManArea";
 import NodeInspector from "./components/nodeInspector";
 import VisualizationPanel from "./components/visualizations/visualizationPanel";
 import Toolbar from "./components/toolbar";
-import CustomNode from "./components/customNode"; // Import the custom node component
-
+import CustomNode from "./components/customNode";
 import { ToolItem } from "./types/toolItem";
 import { getAllTools } from "./data/allTools";
+import { NodeRelationshipService } from "@/app/services/nodeRelationshipservice";
+import { NodeData } from "@/app/types/nodeData";
 
-// Register custom node types
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
 };
@@ -42,7 +41,6 @@ export default function Home() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [nodeCounter, setNodeCounter] = useState(0);
 
-  // UI state
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [showNodeInspector, setShowNodeInspector] = useState(false);
   const [nodeInspectorPosition, setNodeInspectorPosition] = useState({ x: 0, y: 0 });
@@ -52,14 +50,23 @@ export default function Home() {
   const [showMinimap, setShowMinimap] = useState(true);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
-  const logIdCounter = useRef(0);
 
   const onConnect = useCallback(
     (params: Connection) => {
-      const newEdge = addEdge(params, edges);
-      setEdges(newEdge);
+      const newEdges = addEdge(params, edges);
+      setEdges(newEdges);
+      
+      // Update node relationships when edges change
+      const updatedNodes = NodeRelationshipService.updateNodeRelationships(nodes, newEdges);
+      setNodes(updatedNodes);
+      
+      // Propagate data changes to connected nodes
+      if (params.source) {
+        const propagatedNodes = NodeRelationshipService.propagateDataChanges(params.source, updatedNodes, newEdges);
+        setNodes(propagatedNodes);
+      }
     },
-    [setEdges, edges]
+    [setEdges, edges, nodes, setNodes]
   );
 
   const onNodesDelete = useCallback(
@@ -86,6 +93,10 @@ export default function Home() {
       );
       setNodes(remainingNodes);
 
+      // Update relationships for remaining nodes
+      const updatedNodes = NodeRelationshipService.updateNodeRelationships(remainingNodes, edges);
+      setNodes(updatedNodes);
+
       if (selectedNode && deleted.some(node => node.id === selectedNode.id)) {
         setSelectedNode(null);
         setShowNodeInspector(false);
@@ -102,13 +113,112 @@ export default function Home() {
           : node
       )
     );
-  }, [setNodes]);
+    
+    // Propagate changes to child nodes
+    const updatedNodes = NodeRelationshipService.propagateDataChanges(nodeId, nodes, edges);
+    setNodes(updatedNodes);
+  }, [setNodes, nodes, edges]);
+
+  const generateMockFileData = (): any[] => {
+    return Array.from({ length: 100 }, (_, i) => ({
+      id: i + 1,
+      name: `Item ${i + 1}`,
+      value: Math.random() * 100,
+      category: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      amount: Math.floor(Math.random() * 1000),
+      date: new Date(2024, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString().split('T')[0]
+    }));
+  };
+
+  const processNodeData = (node: Node, inputData: any[]): any[] => {
+    const { toolId, parameters } = node.data;
+
+    switch (toolId) {
+      case 'file':
+      case 'csv':
+        return generateMockFileData();
+
+      case 'sampler':
+        const sampleSize = parameters?.sampleSize || 100;
+        return inputData.slice(0, Math.min(sampleSize, inputData.length));
+
+      case 'select-columns':
+        if (parameters?.columns) {
+          const selectedColumns = parameters.columns.split(',').map((col: string) => col.trim());
+          return inputData.map(row => {
+            const newRow: any = {};
+            selectedColumns.forEach(col => {
+              if (row[col] !== undefined) {
+                newRow[col] = row[col];
+              }
+            });
+            return newRow;
+          });
+        }
+        return inputData;
+
+      case 'select-rows':
+        const start = parameters?.startRow || 0;
+        const end = parameters?.endRow || inputData.length;
+        return inputData.slice(start, end);
+
+      case 'filter-more':
+        if (parameters?.column && parameters?.operator && parameters?.value) {
+          return inputData.filter(row => {
+            const cellValue = row[parameters.column];
+            const filterValue = parameters.value;
+
+            switch (parameters.operator) {
+              case '==': return cellValue == filterValue;
+              case '!=': return cellValue != filterValue;
+              case '>': return Number(cellValue) > Number(filterValue);
+              case '<': return Number(cellValue) < Number(filterValue);
+              case '>=': return Number(cellValue) >= Number(filterValue);
+              case '<=': return Number(cellValue) <= Number(filterValue);
+              case 'contains': return String(cellValue).includes(String(filterValue));
+              case 'startswith': return String(cellValue).startsWith(String(filterValue));
+              default: return true;
+            }
+          });
+        }
+        return inputData;
+
+      default:
+        return inputData;
+    }
+  };
+
+  const getOutputColumns = (node: Node, inputData: any[]): string[] => {
+    const { toolId, parameters } = node.data;
+
+    if (inputData.length === 0) return [];
+
+    switch (toolId) {
+      case 'select-columns':
+        if (parameters?.columns) {
+          return parameters.columns.split(',').map((col: string) => col.trim());
+        }
+        return Object.keys(inputData[0]);
+
+      default:
+        return Object.keys(inputData[0]);
+    }
+  };
 
   const executeNode = useCallback((nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
 
     updateNode(nodeId, { status: 'running', progress: 0 });
+
+    // Get input data from parent nodes
+    const inputData = NodeRelationshipService.getNodeInputData(nodeId, nodes, edges);
+
+    // Process the data based on node type
+    const outputData = processNodeData(node, inputData);
+    const outputColumns = getOutputColumns(node, outputData);
 
     // Simulate execution progress
     let progress = 0;
@@ -122,7 +232,9 @@ export default function Home() {
         updateNode(nodeId, {
           status: success ? 'success' : 'error',
           progress: 100,
-          results: success ? { data: 'mock results' } : null,
+          outputData: success ? outputData : null,
+          outputColumns: success ? outputColumns : null,
+          results: success ? { rowCount: outputData.length, columns: outputColumns } : null,
           error: success ? null : 'Execution failed: Sample error message'
         });
 
@@ -130,34 +242,19 @@ export default function Home() {
           setVisualizationNode({
             nodeId,
             type: node.data.toolId,
-            data: generateMockData(node.data.toolId)
+            data: outputData
           });
         }
       } else {
         updateNode(nodeId, { progress });
       }
     }, 100);
-  }, [nodes, updateNode]);
+  }, [nodes, edges, updateNode]);
 
-  const generateMockData = (type: string) => {
-    const data = [];
-    for (let i = 0; i < 100; i++) {
-      data.push({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        category: ['A', 'B', 'C'][Math.floor(Math.random() * 3)],
-        value: Math.random() * 50 + 10
-      });
-    }
-    return data;
-  };
-
-  // Handle node click to show inspector
   const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    // Get the node's screen position more accurately
     const nodeElement = event.currentTarget as HTMLElement;
     const rect = nodeElement.getBoundingClientRect();
-    
+
     // Calculate center position of the node
     const position = {
       x: rect.left + rect.width / 2,
@@ -176,9 +273,7 @@ export default function Home() {
     setShowNodeInspector(true);
   }, [showNodeInspector, selectedNode]);
 
-  // Handle ReactFlow's built-in node click (for selection)
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    // This is for ReactFlow's built-in selection, we'll use our custom handler
     handleNodeClick(event, node);
   }, [handleNodeClick]);
 
@@ -194,7 +289,7 @@ export default function Home() {
       setTimeout(() => {
         executeNode(node.id);
       }, delay);
-      delay += 500; 
+      delay += 500;
     });
 
     setTimeout(() => {
@@ -258,7 +353,7 @@ export default function Home() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && over.id === 'main-area') {
+    if (over) {
       const toolData = active.data.current?.tool as ToolItem;
       if (toolData) {
         const newNodeId = `${toolData.id}-${nodeCounter}`;
@@ -282,6 +377,11 @@ export default function Home() {
             toolId: toolData.id,
             status: 'idle',
             parameters: {},
+            parentNodes: [],
+            childNodes: [],
+            inputData: [],
+            outputData: [],
+            outputColumns: [],
             onExecute: () => executeNode(newNodeId),
             onClick: (event: React.MouseEvent) => handleNodeClick(event, newNode)
           },
@@ -289,13 +389,17 @@ export default function Home() {
         };
 
         setNodes(prev => [...prev, newNode]);
+        
+        // If it's a data node (file/csv), show file upload modal
+        if (['file', 'csv'].includes(toolData.id)) {
+          // We'll handle this in the node inspector when the node is selected
+        }
       }
     }
 
     setActiveId(null);
   };
 
-  // Close inspector when clicking outside
   const handlePaneClick = useCallback(() => {
     if (showNodeInspector) {
       setShowNodeInspector(false);
@@ -377,6 +481,9 @@ export default function Home() {
               onUpdateNode={updateNode}
               onExecuteNode={executeNode}
               position={nodeInspectorPosition}
+              nodeData={NodeRelationshipService.getNodeInputData(selectedNode.id, nodes, edges)}
+              availableColumns={NodeRelationshipService.getAvailableColumns(selectedNode.id, nodes, edges)}
+              edges={edges}
             />
           )}
 

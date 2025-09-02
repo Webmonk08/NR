@@ -1,14 +1,14 @@
 // app/components/toolbar.tsx
 'use client'
 import React, { useState } from 'react';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  Maximize, 
-  Play, 
-  Square, 
-  RotateCcw, 
-  Grid3X3, 
+import {
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Play,
+  Square,
+  RotateCcw,
+  Grid3X3,
   Map,
   Settings,
   HelpCircle
@@ -92,17 +92,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
               edges={edges}
               onLoadWorkflow={onLoadWorkflow}
             />
-            
+
             <div className="w-px h-6 bg-slate-300"></div>
-            
+
             <button
               onClick={isWorkflowRunning ? onStopWorkflow : onRunWorkflow}
               disabled={nodes.length === 0}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium ${
-                isWorkflowRunning 
-                  ? 'bg-red-500 hover:bg-red-600 text-white' 
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium ${isWorkflowRunning
+                  ? 'bg-red-500 hover:bg-red-600 text-white'
                   : 'bg-green-500 hover:bg-green-600 text-white disabled:bg-slate-300'
-              }`}
+                }`}
               title={isWorkflowRunning ? 'Stop Workflow' : 'Run Workflow'}
             >
               {isWorkflowRunning ? (
@@ -129,11 +128,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
           >
             <ZoomOut size={16} />
           </button>
-          
+
           <div className="px-3 py-1 text-sm text-slate-600 font-medium min-w-[60px] text-center">
             {zoomLevel}%
           </div>
-          
+
           <button
             onClick={handleZoomIn}
             className="p-2 text-slate-600 hover:text-slate-800 hover:bg-white rounded-md transition-colors"
@@ -141,9 +140,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
           >
             <ZoomIn size={16} />
           </button>
-          
+
           <div className="w-px h-6 bg-slate-300 mx-1"></div>
-          
+
           <button
             onClick={handleFitView}
             className="p-2 text-slate-600 hover:text-slate-800 hover:bg-white rounded-md transition-colors"
@@ -151,7 +150,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           >
             <Maximize size={16} />
           </button>
-          
+
           <button
             onClick={handleReset}
             className="p-2 text-slate-600 hover:text-slate-800 hover:bg-white rounded-md transition-colors"
@@ -167,28 +166,26 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <div className="flex items-center gap-1">
             <button
               onClick={onToggleSnapToGrid}
-              className={`p-2 rounded-md transition-colors ${
-                snapToGrid 
-                  ? 'bg-blue-100 text-blue-600' 
+              className={`p-2 rounded-md transition-colors ${snapToGrid
+                  ? 'bg-blue-100 text-blue-600'
                   : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
-              }`}
+                }`}
               title="Toggle Snap to Grid"
             >
               <Grid3X3 size={16} />
             </button>
-            
+
             <button
               onClick={onToggleMinimap}
-              className={`p-2 rounded-md transition-colors ${
-                showMinimap 
-                  ? 'bg-blue-100 text-blue-600' 
+              className={`p-2 rounded-md transition-colors ${showMinimap
+                  ? 'bg-blue-100 text-blue-600'
                   : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
-              }`}
+                }`}
               title="Toggle Minimap"
             >
               <Map size={16} />
             </button>
-            
+
             <button
               onClick={onShowSettings}
               className="p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
@@ -202,9 +199,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
           {/* Status Indicator */}
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
-              isWorkflowRunning ? 'bg-green-500' : 'bg-slate-400'
-            }`}></div>
+            <div className={`w-2 h-2 rounded-full ${isWorkflowRunning ? 'bg-green-500' : 'bg-slate-400'
+              }`}></div>
             <span className="text-xs text-slate-600">
               {nodes.length} nodes, {edges.length} connections
             </span>
