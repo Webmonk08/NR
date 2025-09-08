@@ -7,6 +7,7 @@ interface FileState {
   columns: string[];
   loading: boolean;
   error: string | null;
+  isVisualizationPanelOpen: boolean;
 
   uploadFileStore: (file: File) => Promise<{fileid:string , data : any[] ,columns : any[] } >;
   getFileData: (fileId: string) => Promise<void>;
@@ -16,6 +17,7 @@ interface FileState {
     parameters: any,
     fileId?: string
   ) => Promise<any>;
+  toggleVisualizationPanel: () => void;
 }
 
 export const useFileStore = create<FileState>((set) => {
@@ -27,6 +29,7 @@ export const useFileStore = create<FileState>((set) => {
     columns: [],
     loading: false,
     error: null,
+    isVisualizationPanelOpen: false,
 
     uploadFileStore: async (file: File) => {
       set({ loading: true, error: null });
@@ -77,5 +80,7 @@ export const useFileStore = create<FileState>((set) => {
         throw err;
       }
     },
+
+    toggleVisualizationPanel: () => set((state) => ({ isVisualizationPanelOpen: !state.isVisualizationPanelOpen })),
   };
 });

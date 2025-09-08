@@ -3,13 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Download, Maximize2, RefreshCw } from 'lucide-react';
 import ScatterPlot from './scatterPlot';
 import BoxPlot from './boxPlot';
-
+import {DataGrid} from 'react-data-grid';
+import { useFileStore } from '../../store/useFlowStore';
 
 interface VisualizationPanelProps {
     nodeId: string;
     nodeData: any;
     visualizationType: string;
-    data: any[];
     onClose: () => void;
 }
 
@@ -17,12 +17,17 @@ const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
     nodeId,
     nodeData,
     visualizationType,
-    data,
     onClose
 }) => {
+
+    console.log("HI Iam entered")
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const plotRef = useRef<HTMLDivElement>(null);
+    const { data, columns } = useFileStore();
+
+    console.log("Columns" + columns)
+    console.log("Data" + data)
 
     const handleDownload = () => {
         if (plotRef.current) {
@@ -42,13 +47,28 @@ const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
             isLoading
         };
 
+        if (!data || data.length === 0) {
+            return <div className="p-8 text-center text-slate-500">No data available for visualization.</div>;
+        }
+
+        const gridColumns = columns.map(col => ({ key: col, name: col }));
+
         switch (visualizationType) {
             case 'scatter-plot':
                 return <ScatterPlot {...commonProps} />;
             case 'box-plot':
                 return <BoxPlot {...commonProps} />;
+            case 'table':
             default:
-                return <div className="p-8 text-center text-slate-500">Visualization not available</div>;
+                return (
+                    <div className="flex-1 overflow-auto">
+                        <DataGrid
+                            columns={gridColumns}
+                            rows={data}
+                            className="rdg-light"
+                        />
+                    </div>
+                );
         }
     };
 
