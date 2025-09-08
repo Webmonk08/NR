@@ -9,6 +9,19 @@ export interface NodePort {
   required?: boolean;
 }
 
+
+export interface ParameterConfig {
+  type: 'text' | 'number' | 'select' | 'checkbox' | 'file' | 'column-select';
+  label: string;
+  defaultValue: any;
+  options?: string[];
+  min?: number;
+  max?: number;
+  step?: number;
+  description?: string;
+}
+
+
 export interface BaseNodeConfig {
   id: string;
   type: string;

@@ -1,4 +1,3 @@
-// app/components/visualizations/visualizationPanel.tsx
 'use client'
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Download, Maximize2, RefreshCw } from 'lucide-react';

@@ -20,20 +20,25 @@ import {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import Sidenav from '@/app/components/sidenav';
 import DroppableMainArea from "./components/droppableManArea";
-import NodeInspector from "./components/nodeInspector";
+import NodeInspector from "./components/nodeInspector/index";
 import VisualizationPanel from "./components/visualizations/visualizationPanel";
 import Toolbar from "./components/toolbar";
 import CustomNode from "./components/customNode";
 import { ToolItem } from "./types/toolItem";
 import { getAllTools } from "./data/allTools";
 import { NodeRelationshipService } from "@/app/services/nodeRelationshipservice";
-import { NodeData } from "@/app/types/nodeData";
+import dynamic from 'next/dynamic';
+
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
 };
+
+const Sidenav = dynamic(() => import('@/app/components/sidenav'), {
+  ssr: false,
+});
+
 
 export default function Home() {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -428,7 +433,6 @@ export default function Home() {
             onShowSettings={() => setShowKeyboardHelp(true)}
           />
 
-          <div className="flex-1 flex pt-16">
             <Sidenav />
 
             <div className="flex-1 relative main-area">
@@ -469,7 +473,6 @@ export default function Home() {
                 />
               )}
             </div>
-          </div>
 
           {showNodeInspector && selectedNode && (
             <NodeInspector
