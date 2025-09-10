@@ -44,7 +44,8 @@ export class NodeRelationshipService {
     if (parentNodes.length === 0) {
       const currentNode = nodes.find(n => n.id === nodeId);
       if (currentNode && ['file', 'csv'].includes(currentNode.data.toolId)) {
-        return currentNode.data.outputData || [];
+        // Return node's own file data or output data
+        return currentNode.data.fileData || currentNode.data.outputData || [];
       }
       return [];
     }
@@ -52,8 +53,13 @@ export class NodeRelationshipService {
     // Combine data from all parent nodes
     const combinedData: any[] = [];
     parentNodes.forEach(parent => {
-      if (parent.data.outputData) {
-        combinedData.push(...parent.data.outputData);
+      // Priority: processed data > file data > output data
+      const parentData = parent.data.processedData || 
+                        parent.data.fileData || 
+                        parent.data.outputData || [];
+      
+      if (Array.isArray(parentData)) {
+        combinedData.push(...parentData);
       }
     });
 
@@ -65,18 +71,24 @@ export class NodeRelationshipService {
     const allColumns = new Set<string>();
 
     parentNodes.forEach(parent => {
-      if (parent.data.outputColumns) {
-        parent.data.outputColumns.forEach((col: string) => allColumns.add(col));
+      // Priority: processed columns > file columns > output columns
+      const parentColumns = parent.data.processedColumns || 
+                           parent.data.fileColumns || 
+                           parent.data.outputColumns || [];
+      
+      if (Array.isArray(parentColumns)) {
+        parentColumns.forEach((col: string) => allColumns.add(col));
       }
     });
 
-    // If no parent nodes, provide default columns for source nodes
+    // If no parent nodes, get columns from current node or defaults
     if (allColumns.size === 0) {
       const currentNode = nodes.find(n => n.id === nodeId);
       if (currentNode && ['file', 'csv'].includes(currentNode.data.toolId)) {
-        ['id', 'name', 'value', 'category', 'x', 'y', 'date', 'amount'].forEach(col => 
-          allColumns.add(col)
-        );
+        const nodeColumns = currentNode.data.fileColumns || 
+                           currentNode.data.outputColumns || 
+                           ['id', 'name', 'value', 'category', 'x', 'y', 'date', 'amount'];
+        nodeColumns.forEach((col: string) => allColumns.add(col));
       }
     }
 
@@ -120,5 +132,79 @@ export class NodeRelationshipService {
 
     propagateToChildren(changedNodeId);
     return updatedNodes;
+  }
+
+  /**
+   * Updates node with processed data and propagates to children
+   */
+  static updateNodeProcessedData(
+    nodeId: string, 
+    processedData: any[], 
+    processedColumns: string[],
+    nodes: Node[], 
+    edges: Edge[]
+  ): Node[] {
+    const updatedNodes = nodes.map(node => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            processedData,
+            processedColumns,
+            outputData: processedData,
+            outputColumns: processedColumns,
+            status: 'success'
+          }
+        };
+      }
+      return node;
+    });
+
+    // Propagate changes to child nodes
+    return this.propagateDataChanges(nodeId, updatedNodes, edges);
+  }
+
+  /**
+   * Gets all source nodes (file/csv nodes) in the workflow
+   */
+  static getSourceNodes(nodes: Node[]): Node[] {
+    return nodes.filter(node => ['file', 'csv'].includes(node.data.toolId));
+  }
+
+  /**
+   * Checks if node has valid input data from parents or itself
+   */
+  static hasValidInputData(nodeId: string, nodes: Node[], edges: Edge[]): boolean {
+    const inputData = this.getNodeInputData(nodeId, nodes, edges);
+    return Array.isArray(inputData) && inputData.length > 0;
+  }
+
+  /**
+   * Gets the data flow path for a node (all nodes that contribute data)
+   */
+  static getDataFlowPath(nodeId: string, nodes: Node[], edges: Edge[]): string[] {
+    const path: string[] = [];
+    const visited = new Set<string>();
+    
+    const traverse = (currentNodeId: string) => {
+      if (visited.has(currentNodeId)) return;
+      visited.add(currentNodeId);
+      
+      const parentNodes = this.getParentNodes(currentNodeId, nodes, edges);
+      
+      if (parentNodes.length === 0) {
+        // Source node
+        path.unshift(currentNodeId);
+      } else {
+        parentNodes.forEach(parent => {
+          traverse(parent.id);
+        });
+        path.push(currentNodeId);
+      }
+    };
+    
+    traverse(nodeId);
+    return [...new Set(path)]; // Remove duplicates while preserving order
   }
 }

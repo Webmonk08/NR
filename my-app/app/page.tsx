@@ -111,17 +111,15 @@ export default function Home() {
   );
 
   const updateNode = useCallback((nodeId: string, newData: any) => {
-    setNodes(prevNodes =>
-      prevNodes.map(node =>
-        node.id === nodeId
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
-      )
+    const updatedNodes = nodes.map(node =>
+      node.id === nodeId
+        ? { ...node, data: { ...node.data, ...newData } }
+        : node
     );
     
     // Propagate changes to child nodes
-    const updatedNodes = NodeRelationshipService.propagateDataChanges(nodeId, nodes, edges);
-    setNodes(updatedNodes);
+    const finalNodes = NodeRelationshipService.propagateDataChanges(nodeId, updatedNodes, edges);
+    setNodes(finalNodes);
   }, [setNodes, nodes, edges]);
 
   const generateMockFileData = (): any[] => {
@@ -213,12 +211,12 @@ export default function Home() {
   };
 
   const executeNode = useCallback((nodeId: string) => {
-    const node = nodes.find(n => n.id === nodeId);
+    const node = nodes.find((n: any) => n.id === nodeId);
     if (!node) return;
 
     updateNode(nodeId, { status: 'running', progress: 0 });
 
-    // Get input data from parent nodes
+    // Get input data from parent nodes or node's own file data
     const inputData = NodeRelationshipService.getNodeInputData(nodeId, nodes, edges);
 
     // Process the data based on node type
@@ -234,14 +232,32 @@ export default function Home() {
         clearInterval(progressInterval);
 
         const success = Math.random() > 0.2;
-        updateNode(nodeId, {
+        
+        // Update node with processed data
+        const nodeUpdateData = {
           status: success ? 'success' : 'error',
           progress: 100,
+          processedData: success ? outputData : null,
+          processedColumns: success ? outputColumns : null,
           outputData: success ? outputData : null,
           outputColumns: success ? outputColumns : null,
           results: success ? { rowCount: outputData.length, columns: outputColumns } : null,
           error: success ? null : 'Execution failed: Sample error message'
-        });
+        };
+
+        // Use NodeRelationshipService to update and propagate
+        if (success) {
+          const updatedNodes = NodeRelationshipService.updateNodeProcessedData(
+            nodeId, 
+            outputData, 
+            outputColumns, 
+            nodes, 
+            edges
+          );
+          setNodes(updatedNodes);
+        } else {
+          updateNode(nodeId, nodeUpdateData);
+        }
 
         if (success && ['scatter-plot', 'box-plot', 'line-plot', 'bar-plot'].includes(node.data.toolId)) {
           setVisualizationNode({

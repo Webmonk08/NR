@@ -40,7 +40,14 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
   const [showFileUpload, setShowFileUpload] = useState(false)
   const popupRef = useRef<HTMLDivElement>(null)
 
-  const { data: fileData, columns: fileColumns, loading, error, uploadFileStore } = useFileStore()
+  const { 
+    uploadFileForNode, 
+    getNodeData, 
+    getNodeProcessedData,
+    setNodeProcessedData,
+    loading, 
+    error 
+  } = useFileStore()
 
   const hasIncomingEdges = useMemo(() => {
     if (!selectedNode) return false
@@ -62,22 +69,39 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
     return isSourceNode || hasIncomingEdges
   }, [selectedNode, isSourceNode, hasIncomingEdges])
 
+  // Get node-specific data from the store
+  const currentNodeData = useMemo(() => {
+    if (!selectedNode) return null
+    return getNodeData(selectedNode.id)
+  }, [selectedNode, getNodeData])
+
+  const currentNodeProcessedData = useMemo(() => {
+    if (!selectedNode) return null
+    return getNodeProcessedData(selectedNode.id)
+  }, [selectedNode, getNodeProcessedData])
+
   const effectiveColumns = useMemo(() => {
     if (availableColumns && availableColumns.length > 0) {
       return availableColumns
     }
-    if (fileColumns && fileColumns.length > 0) {
-      return fileColumns
+    if (currentNodeData?.columns && currentNodeData.columns.length > 0) {
+      return currentNodeData.columns
+    }
+    if (currentNodeProcessedData?.columns && currentNodeProcessedData.columns.length > 0) {
+      return currentNodeProcessedData.columns
     }
     return ["x", "y", "category", "value", "index"]
-  }, [availableColumns, fileColumns])
+  }, [availableColumns, currentNodeData, currentNodeProcessedData])
 
   const effectiveData = useMemo(() => {
     if (nodeData && nodeData.length > 0) {
       return nodeData
     }
-    if (fileData && fileData.length > 0) {
-      return fileData
+    if (currentNodeProcessedData?.data && currentNodeProcessedData.data.length > 0) {
+      return currentNodeProcessedData.data
+    }
+    if (currentNodeData?.data && currentNodeData.data.length > 0) {
+      return currentNodeData.data
     }
     return Array.from({ length: 20 }, (_, i) => ({
       x: Math.random() * 100,
@@ -86,7 +110,7 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
       value: Math.random() * 50 + 10,
       index: i,
     }))
-  }, [nodeData, fileData])
+  }, [nodeData, currentNodeData, currentNodeProcessedData])
 
   const previewData = useMemo(() => {
     if (!shouldShowDetails) return []
@@ -150,7 +174,7 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
     if (!selectedNode) return
 
     try {
-      const {fileid , data , columns } = await uploadFileStore(file)
+      const nodeFileData = await uploadFileForNode(selectedNode.id, file)
 
       const updatedNodeData = {
         ...selectedNode.data,
@@ -160,13 +184,13 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
           fileName: file.name,
           fileSize: file.size,
           fileType: file.type,
-          rowCount: data?.length || 0,
-          columns: columns,
+          rowCount: nodeFileData.data?.length || 0,
+          columns: nodeFileData.columns,
         },
         status: "success",
         hasFile: true,
-        fileColumns: columns,
-        fileData: data,
+        fileColumns: nodeFileData.columns,
+        fileData: nodeFileData.data,
       }
 
       onUpdateNode(selectedNode.id, updatedNodeData)
@@ -177,8 +201,8 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
-        rowCount: data?.length || 0,
-        columns: columns,
+        rowCount: nodeFileData.data?.length || 0,
+        columns: nodeFileData.columns,
       }))
 
       setExecutionStatus("success")
@@ -226,14 +250,14 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
           onClose={onClose}
           shouldShowDetails={shouldShowDetails}
           hasIncomingEdges={hasIncomingEdges}
-          fileData={fileData}
+          fileData={effectiveData}
         />
 
         {shouldShowDetails && (
           <StatusPanel
             executionStatus={executionStatus}
             loading={loading}
-            fileData={fileData}
+            fileData={effectiveData}
             setShowPreview={setShowPreview}
           />
         )}
@@ -261,7 +285,7 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
               />
             </>
           ) : (
-            <ConnectionMessage isSourceNode={isSourceNode} hasIncomingEdges={hasIncomingEdges} fileData={fileData} />
+            <ConnectionMessage isSourceNode={isSourceNode} hasIncomingEdges={hasIncomingEdges} fileData={effectiveData} />
           )}
         </div>
 
