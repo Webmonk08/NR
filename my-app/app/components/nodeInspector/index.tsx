@@ -11,7 +11,6 @@ import PreviewPanel from "./previewPanel"
 import ParametersPanel from "./parametersPanel"
 import ConnectionMessage from "./connectionMessage"
 import FileUpload from "./fileUpload"
-import { Columns } from "lucide-react"
 
 interface NodeInspectorProps {
   selectedNode: Node | null
@@ -41,9 +40,7 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
   const [showFileUpload, setShowFileUpload] = useState(false)
   const popupRef = useRef<HTMLDivElement>(null)
 
-  const { data: fileData, columns: fileColumns, loading, error, uploadFileStore, toggleVisualizationPanel } = useFileStore()
-
-  console.log("columns" , fileColumns)
+  const { data: fileData, columns: fileColumns, loading, error, uploadFileStore } = useFileStore()
 
   const hasIncomingEdges = useMemo(() => {
     if (!selectedNode) return false
@@ -239,17 +236,6 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
             fileData={fileData}
             setShowPreview={setShowPreview}
           />
-        )}
-
-        {shouldShowDetails && (
-          <div className="px-3 py-2 border-b border-slate-200">
-            <button
-              onClick={toggleVisualizationPanel}
-              className="w-full bg-blue-500 text-white py-1.5 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
-            >
-              Open Visualization
-            </button>
-          </div>
         )}
 
         <div className="max-h-60 overflow-y-auto">

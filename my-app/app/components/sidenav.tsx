@@ -47,22 +47,19 @@ function DraggableTool({ tool }: DraggableToolProps) {
   );
 }
 
+import { getAllTools } from '../data/allTools';
+
 function Sidenav() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sections, setSections] = useState<Section[]>([
+  const allTools = getAllTools();
+  const initialSections: Section[] = [
     {
       id: 'data',
       title: 'Data',
       color: 'text-orange-800',
       bgColor: 'from-orange-300 to-orange-400',
       isExpanded: true,
-      tools: [
-        { id: 'file', name: 'File', icon: <FileText size={24} />, color: 'hover:bg-orange-100' },
-        { id: 'csv', name: 'CSV File Import', icon: <Table size={24} />, color: 'hover:bg-orange-100' },
-        { id: 'datasets', name: 'Datasets', icon: <Download size={24} />, color: 'hover:bg-orange-100' },
-        { id: 'sql', name: 'SQL Table', icon: <Database size={24} />, color: 'hover:bg-orange-100' },
-        { id: 'datatable', name: 'Data Table', icon: <Grid3X3 size={24} />, color: 'hover:bg-orange-100' },
-      ]
+      tools: allTools.filter(t => t.category === 'data')
     },
     {
       id: 'transform',
@@ -70,13 +67,7 @@ function Sidenav() {
       color: 'text-emerald-800',
       bgColor: 'from-emerald-300 to-emerald-400',
       isExpanded: true,
-      tools: [
-        { id: 'sampler', name: 'Data Sampler', icon: <Dice1 size={24} />, color: 'hover:bg-emerald-100' },
-        { id: 'select-columns', name: 'Select Columns', icon: <MousePointer size={24} />, color: 'hover:bg-emerald-100' },
-        { id: 'select-rows', name: 'Select Rows', icon: <Rows size={24} />, color: 'hover:bg-emerald-100' },
-        { id: 'transpose', name: 'Transpose', icon: <RotateCcw size={24} />, color: 'hover:bg-emerald-100' },
-        { id: 'filter-more', name: 'Filter', icon: <Filter size={24} />, color: 'hover:bg-emerald-100' }
-      ]
+      tools: allTools.filter(t => t.category === 'transform')
     },
     {
       id: 'model',
@@ -84,12 +75,7 @@ function Sidenav() {
       color: 'text-pink-800',
       bgColor: 'from-pink-300 to-pink-400',
       isExpanded: true,
-      tools: [
-        { id: 'knn', name: 'kNN', icon: <Users size={24} />, color: 'hover:bg-pink-100' },
-        { id: 'tree', name: 'Tree', icon: <TreePine size={24} />, color: 'hover:bg-pink-100' },
-        { id: 'random-forest', name: 'Random Forest', icon: <TreePine size={24} />, color: 'hover:bg-pink-100' },
-        { id: 'svm', name: 'SVM', icon: <Bot size={24} />, color: 'hover:bg-pink-100' }
-      ]
+      tools: allTools.filter(t => t.category === 'model')
     },
     {
       id: 'visualize',
@@ -97,14 +83,11 @@ function Sidenav() {
       color: 'text-red-800',
       bgColor: 'from-red-300 to-red-400',
       isExpanded: true,
-      tools: [
-        { id: 'box-plot', name: 'Box Plot', icon: <Box size={24} />, color: 'hover:bg-red-100' },
-        { id: 'scatter-plot', name: 'Scatter Plot', icon: <Grid size={24} />, color: 'hover:bg-red-100' },
-        { id: 'line-plot', name: 'Line Plot', icon: <LineChart size={24} />, color: 'hover:bg-red-100' },
-        { id: 'bar-plot', name: 'Bar Plot', icon: <BarChart size={24} />, color: 'hover:bg-red-100' }
-      ]
+      tools: allTools.filter(t => t.category === 'visualization')
     }
-  ]);
+  ];
+
+  const [sections, setSections] = useState<Section[]>(initialSections);
 
   const toggleSection = (sectionId: string) => {
     setSections(prev => prev.map(section =>

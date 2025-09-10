@@ -3,6 +3,7 @@ export interface ToolItem {
     name: string;
     icon: React.ReactNode;
     color: string;
+    category: string;
   }
   
 

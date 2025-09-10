@@ -36,12 +36,17 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   effectiveColumns,
   loading,
 }) => {
+  console.log("Preview Panel - Parameters:", parameters)
+  console.log("Preview Panel - Effective Columns:", effectiveColumns)
+  console.log("Preview Panel - Preview Data sample:", previewData.slice(0, 2))
+
   const PreviewComponent = useMemo(() => {
     if (!showPreview) return null
 
     const toolId = selectedNode.data.toolId
 
     const isSourceNode = ["file", "csv"].includes(toolId)
+    
     if (isSourceNode) {
       // Show file information when file is uploaded
       if (parameters.path || parameters.fileName) {
@@ -139,54 +144,168 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
     // Handle case where no data is available yet
     if (previewData.length === 0) return null
 
-    const xCol = parameters.xAxis || effectiveColumns[0] || "x"
-    const yCol = parameters.yAxis || effectiveColumns[1] || "y"
+    // Get the selected axes from parameters, with fallbacks to first available columns
+    const xCol = parameters.xAxis || parameters.xColumn || effectiveColumns[0] || "x"
+    const yCol = parameters.yAxis || parameters.yColumn || effectiveColumns[1] || "y"
     const categoryCol = parameters.groupBy || parameters.colorBy || effectiveColumns[2] || "category"
-    const valueCol = parameters.column || parameters.yAxis || effectiveColumns[1] || "value"
+    const valueCol = parameters.column || parameters.value || parameters.yAxis || parameters.yColumn || effectiveColumns[1] || "value"
+
+    console.log("Chart Parameters:", { xCol, yCol, valueCol, categoryCol })
+    console.log("Available data keys:", Object.keys(previewData[0] || {}))
+
+    // Validate that the selected columns exist in the data
+    const dataKeys = Object.keys(previewData[0] || {})
+    const validXCol = dataKeys.includes(xCol) ? xCol : effectiveColumns[0] || dataKeys[0]
+    const validYCol = dataKeys.includes(yCol) ? yCol : effectiveColumns[1] || dataKeys[1]
+    const validValueCol = dataKeys.includes(valueCol) ? valueCol : effectiveColumns[1] || dataKeys[1]
+
+    console.log("Validated columns:", { validXCol, validYCol, validValueCol })
 
     switch (toolId) {
       case "scatter-plot":
+        // Ensure we have numeric data for scatter plot
+        const scatterData = previewData.map(row => ({
+          ...row,
+          x: Number(row[validXCol]) || 0,
+          y: Number(row[validYCol]) || 0,
+          originalX: row[validXCol],
+          originalY: row[validYCol]
+        })).filter(row => !isNaN(row.x) && !isNaN(row.y))
+
+        console.log("Scatter plot data sample:", scatterData.slice(0, 3))
+
         return (
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart data={previewData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xCol} tick={{ fontSize: 10 }} />
-                <YAxis dataKey={yCol} tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Scatter dataKey={yCol} fill="#8884d8" />
-              </ScatterChart>
-            </ResponsiveContainer>
+          <div className="bg-slate-50 p-3 rounded">
+            <div className="text-xs font-medium text-slate-700 mb-2">
+              📊 Scatter Plot Preview
+              <div className="text-xs text-slate-500 mt-1">
+                X: {validXCol} • Y: {validYCol} • Points: {scatterData.length}
+              </div>
+            </div>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart 
+                  data={scatterData}
+                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    type="number"
+                    dataKey="x"
+                    name={validXCol}
+                    tick={{ fontSize: 10 }} 
+                    stroke="#64748b"
+                  />
+                  <YAxis 
+                    type="number"
+                    dataKey="y"
+                    name={validYCol}
+                    tick={{ fontSize: 10 }} 
+                    stroke="#64748b"
+                  />
+                  <Tooltip 
+                    cursor={{ strokeDasharray: '3 3' }}
+                    labelStyle={{ fontSize: 12 }}
+                    contentStyle={{ 
+                      fontSize: 11, 
+                      backgroundColor: '#f8fafc', 
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px'
+                    }}
+                    formatter={(value, name) => [
+                      typeof value === 'number' ? value.toFixed(2) : value,
+                      name === 'x' ? validXCol : name === 'y' ? validYCol : name
+                    ]}
+                  />
+                  <Scatter 
+                    name="Data Points"
+                    data={scatterData}
+                    fill={parameters.pointColor || "#3b82f6"}
+                    strokeWidth={0}
+                    r={parameters.pointSize || 4}
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )
 
       case "line-plot":
         return (
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={previewData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xCol} tick={{ fontSize: 10 }} />
-                <YAxis dataKey={yCol} tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey={yCol} stroke={parameters.lineColor || "#8884d8"} strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="bg-slate-50 p-3 rounded">
+            <div className="text-xs font-medium text-slate-700 mb-2">
+              📈 Line Plot Preview
+              <div className="text-xs text-slate-500 mt-1">
+                X: {validXCol} • Y: {validYCol}
+              </div>
+            </div>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={previewData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey={validXCol} 
+                    tick={{ fontSize: 10 }} 
+                    stroke="#64748b"
+                  />
+                  <YAxis 
+                    dataKey={validYCol} 
+                    tick={{ fontSize: 10 }} 
+                    stroke="#64748b"
+                  />
+                  <Tooltip 
+                    labelStyle={{ fontSize: 12 }}
+                    contentStyle={{ fontSize: 11, backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey={validYCol} 
+                    stroke={parameters.lineColor || "#3b82f6"} 
+                    strokeWidth={parameters.lineWidth || 2}
+                    dot={{ fill: parameters.lineColor || "#3b82f6", strokeWidth: 0, r: 3 }}
+                    activeDot={{ r: 5, fill: parameters.lineColor || "#3b82f6" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )
 
       case "bar-plot":
         return (
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={previewData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xCol} tick={{ fontSize: 10 }} />
-                <YAxis dataKey={yCol} tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Bar dataKey={valueCol} fill={parameters.barColor || "#8884d8"} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="bg-slate-50 p-3 rounded">
+            <div className="text-xs font-medium text-slate-700 mb-2">
+              📊 Bar Plot Preview
+              <div className="text-xs text-slate-500 mt-1">
+                X: {validXCol} • Y: {validValueCol}
+              </div>
+            </div>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={previewData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey={validXCol} 
+                    tick={{ fontSize: 10 }} 
+                    stroke="#64748b"
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10 }} 
+                    stroke="#64748b"
+                  />
+                  <Tooltip 
+                    labelStyle={{ fontSize: 12 }}
+                    contentStyle={{ fontSize: 11, backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}
+                  />
+                  <Bar 
+                    dataKey={validValueCol} 
+                    fill={parameters.barColor || "#3b82f6"}
+                    stroke={parameters.barBorderColor || "transparent"}
+                    strokeWidth={parameters.barBorderWidth || 0}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )
 
@@ -196,7 +315,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
             <div className="text-center">
               <div className="text-2xl mb-2">📊</div>
               <div className="text-sm text-slate-600">Box Plot Preview</div>
-              <div className="text-xs text-slate-500">Column: {valueCol}</div>
+              <div className="text-xs text-slate-500">Column: {validValueCol}</div>
               {parameters.groupBy && <div className="text-xs text-slate-500">Grouped by: {parameters.groupBy}</div>}
             </div>
           </div>
