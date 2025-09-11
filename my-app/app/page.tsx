@@ -503,6 +503,7 @@ export default function Home() {
               nodeData={NodeRelationshipService.getNodeInputData(selectedNode.id, nodes, edges)}
               availableColumns={NodeRelationshipService.getAvailableColumns(selectedNode.id, nodes, edges)}
               edges={edges}
+              nodes={nodes}
             />
           )}
 

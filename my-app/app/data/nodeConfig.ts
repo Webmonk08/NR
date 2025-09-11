@@ -30,6 +30,7 @@ export const nodeConfigs: Record<string, Record<string, ParameterConfig>> = {
     value: { type: 'text', label: 'Filter Value', defaultValue: '', description: 'Value to filter by' }
   },
   'knn': {
+    target_column: { type: 'column-select', label: 'Target Column', defaultValue: '', description: 'Column to predict' },
     neighbors: { type: 'number', label: 'Number of Neighbors', defaultValue: 5, min: 1, max: 50, description: 'K value for nearest neighbors' },
     metric: { type: 'select', label: 'Distance Metric', defaultValue: 'euclidean', options: ['euclidean', 'manhattan', 'minkowski'], description: 'Distance calculation method' },
     weights: { type: 'select', label: 'Weights', defaultValue: 'uniform', options: ['uniform', 'distance'], description: 'Weight function for predictions' }
@@ -44,10 +45,19 @@ export const nodeConfigs: Record<string, Record<string, ParameterConfig>> = {
     kernel: { type: 'select', label: 'Kernel', defaultValue: 'rbf', options: ['linear', 'poly', 'rbf', 'sigmoid'], description: 'Kernel type for SVM' },
     gamma: { type: 'select', label: 'Gamma', defaultValue: 'scale', options: ['scale', 'auto'], description: 'Kernel coefficient' }
   },
-  'random-forest': {
+  'random_forest': {
+    target_column: { type: 'column-select', label: 'Target Column', defaultValue: '', description: 'Column to predict' },
     nEstimators: { type: 'number', label: 'Number of Trees', defaultValue: 100, min: 10, max: 1000, description: 'Number of trees in the forest' },
     maxDepth: { type: 'number', label: 'Max Depth', defaultValue: 10, min: 1, max: 50, description: 'Maximum depth of trees' },
     minSamplesSplit: { type: 'number', label: 'Min Samples Split', defaultValue: 2, min: 2, max: 10, description: 'Minimum samples to split node' }
+  },
+  'adaboost': {
+    target_column: { type: 'column-select', label: 'Target Column', defaultValue: '', description: 'Column to predict' },
+    n_estimators: { type: 'number', label: 'Number of Estimators', defaultValue: 50, min: 10, max: 1000, description: 'Number of estimators in the forest' },
+    learning_rate: { type: 'number', label: 'Learning Rate', defaultValue: 1.0, min: 0.01, max: 2, step: 0.01, description: 'Learning rate' }
+  },
+  'naive_bayes': {
+    target_column: { type: 'column-select', label: 'Target Column', defaultValue: '', description: 'Column to predict' }
   },
   'scatter-plot': {
     xAxis: { type: 'column-select', label: 'X-Axis Column', defaultValue: '', description: 'Column for X-axis values' },

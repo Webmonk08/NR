@@ -57,9 +57,7 @@ const ParametersPanel: React.FC<ParametersPanelProps> = ({
                   <CheckCircle size={12} className="text-green-500" />
                   <span>File: {parameters.fileName}</span>
                 </div>
-                {parameters.fileSize && (
-                  <div className="pl-5">Size: {(parameters.fileSize / 1024).toFixed(1)} KB</div>
-                )}
+                {parameters.fileSize && <div className="pl-5">Size: {(parameters.fileSize / 1024).toFixed(1)} KB</div>}
                 {parameters.rowCount && <div className="pl-5">Rows: {parameters.rowCount}</div>}
               </div>
             )}

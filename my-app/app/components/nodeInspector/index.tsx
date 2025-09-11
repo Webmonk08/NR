@@ -11,6 +11,7 @@ import PreviewPanel from "./previewPanel"
 import ParametersPanel from "./parametersPanel"
 import ConnectionMessage from "./connectionMessage"
 import FileUpload from "./fileUpload"
+import ModelPreviewModal from "./modelPreviewModal"
 
 interface NodeInspectorProps {
   selectedNode: Node | null
@@ -38,16 +39,10 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 })
   const [showPreview, setShowPreview] = useState(true)
   const [showFileUpload, setShowFileUpload] = useState(false)
+  const [showModelPreview, setShowModelPreview] = useState(false)
   const popupRef = useRef<HTMLDivElement>(null)
 
-  const { 
-    uploadFileForNode, 
-    getNodeData, 
-    getNodeProcessedData,
-    setNodeProcessedData,
-    loading, 
-    error 
-  } = useFileStore()
+  const { uploadFileForNode, getNodeData, getNodeProcessedData, setNodeProcessedData, loading, error } = useFileStore()
 
   const hasIncomingEdges = useMemo(() => {
     if (!selectedNode) return false
@@ -62,6 +57,14 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
   const isSourceNode = useMemo(() => {
     if (!selectedNode) return false
     return ["file", "csv"].includes(selectedNode.data.toolId)
+  }, [selectedNode])
+
+  const isModelNode = useMemo(() => {
+    if (!selectedNode) return false
+    return (
+      selectedNode.data.category === "model" ||
+      ["knn", "svm", "random_forest", "logistic-regression"].includes(selectedNode.data.toolId)
+    )
   }, [selectedNode])
 
   const shouldShowDetails = useMemo(() => {
@@ -79,6 +82,30 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
     if (!selectedNode) return null
     return getNodeProcessedData(selectedNode.id)
   }, [selectedNode, getNodeProcessedData])
+
+  // Get fileId from multiple sources with better fallback logic
+  const effectiveFileId = useMemo(() => {
+    if (!selectedNode) return null
+    
+    // Priority order for fileId sources:
+    // 1. From currentNodeData (store)
+    // 2. From selectedNode.data.fileId (node data)
+    // 3. From parameters.fileId 
+    // 4. For model nodes, try to get from parent/connected source nodes
+    let fileId = currentNodeData?.fileId || selectedNode.data.fileId || parameters.fileId
+
+    // If this is a model node and no direct fileId, try to get it from incoming edges
+    if (!fileId && isModelNode && hasIncomingEdges) {
+      // Find the source node that should have the file data
+      const sourceEdge = edges.find(edge => edge.target === selectedNode.id)
+      if (sourceEdge) {
+        const sourceNodeData = getNodeData(sourceEdge.source)
+        fileId = sourceNodeData?.fileId
+      }
+    }
+
+    return fileId
+  }, [selectedNode, currentNodeData, parameters, isModelNode, hasIncomingEdges, edges, getNodeData])
 
   const effectiveColumns = useMemo(() => {
     if (availableColumns && availableColumns.length > 0) {
@@ -176,6 +203,9 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
     try {
       const nodeFileData = await uploadFileForNode(selectedNode.id, file)
 
+      // Make sure to store the fileId from the response
+      const fileId = nodeFileData.fileId || nodeFileData.fileId || selectedNode.id
+
       const updatedNodeData = {
         ...selectedNode.data,
         parameters: {
@@ -186,9 +216,11 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
           fileType: file.type,
           rowCount: nodeFileData.data?.length || 0,
           columns: nodeFileData.columns,
+          fileId: fileId, // Store fileId in parameters as backup
         },
         status: "success",
         hasFile: true,
+        fileId: fileId, // Store fileId at node data level
         fileColumns: nodeFileData.columns,
         fileData: nodeFileData.data,
       }
@@ -203,6 +235,7 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
         fileType: file.type,
         rowCount: nodeFileData.data?.length || 0,
         columns: nodeFileData.columns,
+        fileId: fileId, // Store fileId in parameters state
       }))
 
       setExecutionStatus("success")
@@ -274,6 +307,20 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
                 loading={loading}
               />
 
+              {isModelNode && (
+                <div className="px-3 py-2 border-t border-slate-200">
+                  <button
+                    onClick={() => setShowModelPreview(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors disabled:bg-blue-300"
+                    disabled={!effectiveFileId || !parameters.target_column}
+                  >
+                    {!effectiveFileId ? 'Connect Data Source' : 
+                     !parameters.target_column ? 'Select Target Column' : 
+                     'View Model Results'}
+                  </button>
+                </div>
+              )}
+
               <ParametersPanel
                 config={config}
                 parameters={parameters}
@@ -285,7 +332,11 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
               />
             </>
           ) : (
-            <ConnectionMessage isSourceNode={isSourceNode} hasIncomingEdges={hasIncomingEdges} fileData={effectiveData} />
+            <ConnectionMessage
+              isSourceNode={isSourceNode}
+              hasIncomingEdges={hasIncomingEdges}
+              fileData={effectiveData}
+            />
           )}
         </div>
 
@@ -296,6 +347,7 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
                 Configure parameters • {showPreview ? "Preview enabled" : "Preview disabled"}
                 {selectedNode.data.parentNodes?.length > 0 && <> • {selectedNode.data.parentNodes.length} parent(s)</>}
                 {selectedNode.data.childNodes?.length > 0 && <> • {selectedNode.data.childNodes.length} child(ren)</>}
+                {effectiveFileId && <> • File ID: {effectiveFileId.substring(0, 8)}...</>}
               </>
             ) : (
               <>Connect nodes to enable configuration</>
@@ -304,12 +356,15 @@ const NodeInspector: React.FC<NodeInspectorProps> = ({
         </div>
       </div>
 
-      {showFileUpload && (
-        <FileUpload
-          onClose={() => setShowFileUpload(false)}
-          onFileUpload={handleFileUpload}
-        />
-      )}
+      {showFileUpload && <FileUpload onClose={() => setShowFileUpload(false)} onFileUpload={handleFileUpload} />}
+      
+      <ModelPreviewModal
+        node={selectedNode}
+        fileId={effectiveFileId}
+        parameters={parameters}
+        isOpen={showModelPreview}
+        onClose={() => setShowModelPreview(false)}
+      />
     </>
   )
 }
